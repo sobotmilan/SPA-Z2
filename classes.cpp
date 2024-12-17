@@ -2,7 +2,6 @@
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
-
 static int ERRORADDR = INT_MIN;
 
 Graph::Graph(int nodeNum) : n(nodeNum), nodes(new char[n])
@@ -139,4 +138,47 @@ void Taxi::setFree(bool value)
 void Taxi::calcTime(int passengerLocation, const Graph &city)
 {
     this->timeToPassenger = city[this->currLocation][passengerLocation];
+}
+
+TaxiSys::TaxiSys(Graph &city, int n) : t(n), city(city)
+{
+    arr = (Taxi *)malloc(sizeof(Taxi) * n);
+    int idGen = 1;
+    int randomLocation = rand() % city.getN();
+    for (int i = 0; i < n; i++)
+    {
+        arr[i] = Taxi(idGen, randomLocation);
+        idGen++;
+    }
+}
+TaxiSys::~TaxiSys()
+{
+    free(arr);
+    this->t = 0;
+}
+Taxi *TaxiSys::assignTaxi(int location)
+{
+    Taxi *closest = nullptr;
+    int minTime = INT_MAX;
+
+    for (int i = 0; i < t; ++i)
+    {
+        if (this->arr[i].isFree())
+        {
+            this->arr[i].calcTime(location, this->city);
+            if (this->arr[i].getTimeToPassenger() < minTime)
+            {
+                minTime = this->arr[i].getTimeToPassenger();
+                closest = &this->arr[i];
+            }
+        }
+    }
+
+    if (closest != nullptr)
+        closest->setFree(false);
+
+    return closest;
+}
+std::ostream & ::operator<<(std::ostream & os, const TaxiSys & other)
+{
 }

@@ -5,10 +5,6 @@
 using namespace std;
 #define MAX 1000
 
-class BST
-{
-};
-
 class Graph
 {
     int n;
@@ -59,10 +55,12 @@ class TaxiSys
 {
     int t;
     Taxi *arr;
+    Graph &city;
+
+public:
+    TaxiSys(Graph &city, int n = 0);
+    ~TaxiSys();
+    Taxi *assignTaxi(int);
 };
 
-void dijkstra(Graph *);
-void pathDijkstra(int);
-
-void searchBST(BST, int);
-void addBST(BST, int);
+std::ostream &operator<<(std::ostream &os, const TaxiSys &);
