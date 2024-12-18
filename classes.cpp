@@ -2,6 +2,8 @@
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+
 static int ERRORADDR = INT_MIN;
 
 Graph::Graph(int nodeNum) : n(nodeNum), nodes(new char[n])
@@ -102,83 +104,151 @@ void Graph::ucitajCSV(const char *filename)
     cout << "Citanje uspjesno." << endl;
 }
 
-Taxi::Taxi(int id, int currentLocation) : id(id), currLocation(currentLocation), timeToPassenger(-1), free(true)
+Node *TaxiBST::insert(Node *root, Taxi vehicle)
 {
+    if (root == nullptr)
+        return new Node(vehicle);
+    if (vehicle.arrivalTime < root->vehicle.arrivalTime)
+        root->left = insert(root->left, vehicle);
+    else
+        root->right = insert(root->right, vehicle);
+    return root;
 }
-int Taxi::getId() const
+Node *TaxiBST::findMin(Node *root)
 {
-    return this->id;
+    while (root && root->left)
+        root = root->left;
+    return root;
 }
-int Taxi::getCurrLocation() const
+Node *TaxiBST::deleteNode(Node *root, const char *taxiId)
 {
-    return this->currLocation;
-}
-int Taxi::getTimeToPassenger() const
-{
-    return this->timeToPassenger;
-}
-bool Taxi::isFree() const
-{
-    return this->free;
-}
-
-void Taxi::setCurrLocation(int value)
-{
-    this->currLocation = value;
-}
-void Taxi::setTimeToPassenger(int value)
-{
-    this->timeToPassenger = value;
-}
-void Taxi::setFree(bool value)
-{
-    this->free = value;
-}
-
-void Taxi::calcTime(int passengerLocation, const Graph &city)
-{
-    this->timeToPassenger = city[this->currLocation][passengerLocation];
-}
-
-TaxiSys::TaxiSys(Graph &city, int n) : t(n), city(city)
-{
-    arr = (Taxi *)malloc(sizeof(Taxi) * n);
-    int idGen = 1;
-    int randomLocation = rand() % city.getN();
-    for (int i = 0; i < n; i++)
+    if (root == nullptr)
+        return nullptr;
+    if (strcmp(root->vehicle.id, taxiId) < 0)
+        root->left = deleteNode(root->left, taxiId);
+    else if (strcmp(taxiId, root->vehicle.id) > 0)
+        root->right = deleteNode(root->right, taxiId);
+    else
     {
-        arr[i] = Taxi(idGen, randomLocation);
-        idGen++;
+        if (root->left == nullptr)
+        {
+            Node *temp = root->right;
+            delete root;
+            return temp;
+        }
+        else if (root->right == nullptr)
+        {
+            Node *temp = root->left;
+            delete root;
+            return temp;
+        }
+        Node *temp = findMin(root->right);
+        root->vehicle = temp->vehicle;
+        root->right = deleteNode(root->right, temp->vehicle.id);
+    }
+    return root;
+}
+void TaxiBST::insert(Taxi &vehicle)
+{
+    root = insert(root, vehicle);
+}
+Taxi *TaxiBST::findMin()
+{
+    Node *res = findMin(root);
+    if (res != nullptr)
+        return &res->vehicle;
+    else
+        return nullptr;
+}
+void TaxiBST::remove(const char *targetID)
+{
+    root = deleteNode(root, targetID);
+}
+bool TaxiBST::isEmpty()
+{
+    return root == nullptr;
+}
+
+TaxiSys::TaxiSys(const Graph &city, int num, const char *filename, TaxiBST &tree) : city(city), t(num), vehicles(new Taxi[num]), tree(tree)
+{
+    FILE *vehicleList = fopen(filename, "r");
+    if (vehicleList == nullptr)
+    {
+        t = 0;
+        delete[] vehicles;
+        return;
+    }
+    for (int i = 0; i < num; i++)
+    {
+        char buffer[256];
+
+        while (fgets(buffer, sizeof(buffer), vehicleList) != nullptr)
+        {
+            int j = 0;
+            char tempID[8];
+            while (buffer[j] != ',' && buffer[j] != '\0')
+            {
+                tempID[j] = buffer[j];
+                j++;
+            }
+            strcpy(vehicles[i].id, tempID);
+            char tempAddr[5];
+            int k = 0;
+            if (buffer[j] = ',')
+                j++;
+            while (buffer[j] != '\0')
+            {
+                tempAddr[k] = buffer[j];
+                j++;
+                k++;
+            }
+            vehicles[i].currAddr = atoi(tempAddr);
+        }
+
+        tree.insert(vehicles[i]);
     }
 }
 TaxiSys::~TaxiSys()
 {
-    free(arr);
+    delete[] this->arr;
     this->t = 0;
+    delete[] this->vehicles;
 }
-Taxi *TaxiSys::assignTaxi(int location)
-{
-    Taxi *closest = nullptr;
-    int minTime = INT_MAX;
 
-    for (int i = 0; i < t; ++i)
+void TaxiSys::executeQuery(const char *filename)
+{
+    FILE *queries = fopen(filename, "r");
+    if (queries == nullptr)
     {
-        if (this->arr[i].isFree())
-        {
-            this->arr[i].calcTime(location, this->city);
-            if (this->arr[i].getTimeToPassenger() < minTime)
-            {
-                minTime = this->arr[i].getTimeToPassenger();
-                closest = &this->arr[i];
-            }
-        }
+        t = 0;
+        delete[] vehicles;
+        cout << "Neuspjesno otvaranje ulazne datoteke.";
+        return;
     }
+    char buffer[256];
+    while (fgets(buffer, sizeof(buffer), queries) != nullptr)
+    {
+        int location;
+        int destination;
+        char tempAddr[5];
+        int i = 0;
+        while (buffer[i] != '\0' && buffer[i] != ',')
+        {
+            tempAddr[i] = buffer[i];
+            i++;
+        }
+        location = atoi(tempAddr);
+        int j = 0;
+        strcpy(tempAddr, "");
+        while (buffer[i] != '\0')
+        {
+            tempAddr[j] = buffer[i];
+            j++;
+            i++;
+        }
+        destination = atoi(tempAddr);
+        strcpy(tempAddr, "");
 
-    if (closest != nullptr)
-        closest->setFree(false);
-
-    return closest;
-}
-std::ostream & ::operator<<(std::ostream & os, const TaxiSys & other)
-{
+        assignVehicle();
+    }
 }

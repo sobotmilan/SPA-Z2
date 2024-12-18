@@ -27,40 +27,115 @@ public:
 
 std::ostream &operator<<(std::ostream &os, const Graph &);
 
-class Taxi
+struct Taxi
 {
-    int id;
-    int currLocation;
-    int timeToPassenger;
+    char *id;
+    int arrivalTime;
+    int currAddr;
     bool free;
-
-public:
-    Taxi(int id, int currentLocation);
-
-    int getId() const;
-    int getCurrLocation() const;
-    int getTimeToPassenger() const;
-    bool isFree() const;
-
-    void setCurrLocation(int);
-    void setTimeToPassenger(int);
-    void setFree(bool);
-
-    void calcTime(int, const Graph &);
 };
 
 std::ostream &operator<<(std::ostream &os, const Taxi &);
 
+struct Node
+{
+    Taxi vehicle;
+    struct Node *left, *right;
+
+    Node(Taxi v) : vehicle(v), left(nullptr), right(nullptr) {};
+};
+
+class TaxiBST
+{
+    Node *root;
+    Node *insert(Node *root, Taxi vehicle);
+    Node *findMin(Node *root);
+    Node *deleteNode(Node *root, const char *taxiId);
+
+public:
+    TaxiBST() : root(nullptr) {};
+    void insert(Taxi &);
+    Taxi *findMin();
+    void remove(const char *);
+    bool isEmpty();
+};
+
+struct Journey
+{
+    int location;
+    int destination;
+};
+
 class TaxiSys
 {
     int t;
-    Taxi *arr;
-    Graph &city;
+    Journey *arr;
+    Taxi *vehicles;
+    Graph city;
+    TaxiBST tree;
 
 public:
-    TaxiSys(Graph &city, int n = 0);
+    TaxiSys(const Graph &, int num, const char *filename, TaxiBST &tree);
     ~TaxiSys();
-    Taxi *assignTaxi(int);
+
+    void executeQuery(const char *filename = nullptr);
 };
 
-std::ostream &operator<<(std::ostream &os, const TaxiSys &);
+void dijkstra(const Graph &grad, int start, int *distances, int *previous)
+{
+    const int n = grad.getN();
+    bool visited[MAX] = {false};
+    for (int i = 0; i < n; i++)
+    {
+        distances[i] = INT_MAX;
+        previous[i] = -1;
+    }
+    distances[start] = 0;
+
+    for (int i = 0; i < n - 1; ++i)
+    {
+        int minDist = INT_MAX, minIndex = -1;
+        for (int j = 0; j < n; i++)
+        {
+            if (!visited[j] && distances[j] < minDist)
+            {
+                minDist = distances[j];
+                minIndex = j;
+            }
+        }
+
+        if (minIndex == -1)
+            break;
+
+        visited[minIndex] = true;
+
+        for (int j = 0; j < n; j++)
+        {
+            int tezina = grad[minIndex][j];
+            if (!visited[j] && tezina > 0 && distances[minIndex] != INT_MAX &&
+                distances[minIndex] + tezina < distances[j])
+            {
+                distances[j] = distances[minIndex] + tezina;
+                previous[j] = minIndex;
+            }
+        }
+    }
+}
+
+void path(int start, int target, const int *previous)
+{
+    if (start == target)
+    {
+        cout << target;
+        return;
+    }
+
+    if (previous[target] == -1)
+    {
+        cout << "Ne postoji putanja izmedju zadatih cvorova.";
+        return;
+    }
+
+    path(start, previous[target], previous);
+    std::cout << " -> " << target;
+}
