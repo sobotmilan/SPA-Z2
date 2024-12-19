@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
+#ifndef CLASSES_H
+#define CLASSES_H
 using namespace std;
 #define MAX 1000
 
@@ -42,7 +44,7 @@ struct Node
     Taxi vehicle;
     struct Node *left, *right;
 
-    Node(Taxi v) : vehicle(v), left(nullptr), right(nullptr) {};
+    Node(Taxi v);
 };
 
 class TaxiBST
@@ -79,63 +81,12 @@ public:
     ~TaxiSys();
 
     void executeQuery(const char *filename = nullptr);
+    void executeRide(int, int);
+    void wait(int);
+    void putovanje(Taxi *, int);
 };
 
-void dijkstra(const Graph &grad, int start, int *distances, int *previous)
-{
-    const int n = grad.getN();
-    bool visited[MAX] = {false};
-    for (int i = 0; i < n; i++)
-    {
-        distances[i] = INT_MAX;
-        previous[i] = -1;
-    }
-    distances[start] = 0;
+void dijkstra(const Graph &, int, int *, int *);
+void path(int, int, const int *);
 
-    for (int i = 0; i < n - 1; ++i)
-    {
-        int minDist = INT_MAX, minIndex = -1;
-        for (int j = 0; j < n; i++)
-        {
-            if (!visited[j] && distances[j] < minDist)
-            {
-                minDist = distances[j];
-                minIndex = j;
-            }
-        }
-
-        if (minIndex == -1)
-            break;
-
-        visited[minIndex] = true;
-
-        for (int j = 0; j < n; j++)
-        {
-            int tezina = grad[minIndex][j];
-            if (!visited[j] && tezina > 0 && distances[minIndex] != INT_MAX &&
-                distances[minIndex] + tezina < distances[j])
-            {
-                distances[j] = distances[minIndex] + tezina;
-                previous[j] = minIndex;
-            }
-        }
-    }
-}
-
-void path(int start, int target, const int *previous)
-{
-    if (start == target)
-    {
-        cout << target;
-        return;
-    }
-
-    if (previous[target] == -1)
-    {
-        cout << "Ne postoji putanja izmedju zadatih cvorova.";
-        return;
-    }
-
-    path(start, previous[target], previous);
-    std::cout << " -> " << target;
-}
+#endif

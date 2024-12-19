@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 static int ERRORADDR = INT_MIN;
 
@@ -191,6 +193,7 @@ TaxiSys::TaxiSys(const Graph &city, int num, const char *filename, TaxiBST &tree
                 tempID[j] = buffer[j];
                 j++;
             }
+            vehicles[i].id = new char[strlen(tempID) + 1];
             strcpy(vehicles[i].id, tempID);
             char tempAddr[5];
             int k = 0;
@@ -249,6 +252,173 @@ void TaxiSys::executeQuery(const char *filename)
         destination = atoi(tempAddr);
         strcpy(tempAddr, "");
 
-        assignVehicle();
+        this->executeRide(location, destination);
     }
 }
+
+void TaxiSys::executeRide(int start, int destination)
+{
+    Taxi *assignedVehicle = this->tree.findMin();
+
+    while (assignedVehicle == nullptr)
+    {
+        cout << "Nema slobodnih vozila. Pricekajte dok se ne oslobodi jedno vozilo!" << endl;
+        wait(10);
+        assignedVehicle = this->tree.findMin();
+    }
+
+    int *distances = new int[this->city.getN()];
+    int *previous = new int[this->city.getN()];
+    dijkstra(city, assignedVehicle->currAddr, distances, previous);
+
+    int pickupDistance = distances[start];
+    if (pickupDistance == INT_MAX)
+    {
+        cout << "Korisnik je nedostizan od strane bilo kog vozila!" << endl;
+        delete[] distances;
+        delete[] previous;
+        assignedVehicle->free = true;
+        return;
+    }
+
+    assignedVehicle->free = false;
+
+    dijkstra(city, start, distances, previous);
+    int travelDistance = distances[destination];
+    if (travelDistance == INT_MAX)
+    {
+        cout << "Ne postoji putanja do destinacije za pozivaoca." << endl;
+        delete[] distances;
+        delete[] previous;
+        assignedVehicle->free = true;
+        return;
+    }
+
+    int totalTravelTime = pickupDistance + travelDistance;
+
+    assignedVehicle->currAddr = destination;
+
+    cout << "Vozilo " << assignedVehicle->id << " je dodijeljeno pozivaocu." << endl;
+    cout << "Procijenjeno vrijeme dolaska vozila do korisnika: " << pickupDistance << " units." << endl;
+    cout << "Procijenjeno vrijeme putovanja do destinacije: " << travelDistance << endl;
+
+    cout << "Put do lokacije preuzimanja pozivaoca: ";
+    path(assignedVehicle->currAddr, start, previous);
+    cout << endl;
+    cout << "Put do destinacije: ";
+    path(start, destination, previous);
+    cout << endl;
+
+    putovanje(assignedVehicle, totalTravelTime);
+
+    assignedVehicle->free = true;
+
+    delete[] distances;
+    delete[] previous;
+}
+
+void TaxiSys::wait(int elapsedTime)
+{
+    cout << "Simuliranje prolaska vremena..." << endl;
+
+    for (int i = 0; i < this->t; ++i)
+    {
+        Sleep(1000);
+        if (!vehicles[i].free && vehicles[i].arrivalTime <= elapsedTime)
+        {
+            vehicles[i].free = true;
+            cout << "Vozilo " << vehicles[i].id << " je sada slobodno" << endl;
+            break;
+        }
+    }
+
+    cout << "Vremenska simulacija ispunjena." << endl;
+}
+
+void TaxiSys::putovanje(Taxi *assignedVehicle, int totalTravelTime)
+{
+    if (assignedVehicle == nullptr)
+    {
+        cout << "Nema dodijeljenog vozila za ovaj put!!!" << endl;
+        return;
+    }
+
+    cout << "Simuliranje putovanja za vozilo sa identifikatorom " << assignedVehicle->id << "." << endl;
+
+    assignedVehicle->arrivalTime += totalTravelTime;
+    assignedVehicle->free = false;
+
+    cout << "Vozilo " << assignedVehicle->id << " trenutno putuje, bice slobodno za " << totalTravelTime << " minuta." << endl;
+
+    for (int i = 1; i <= totalTravelTime; ++i)
+    {
+        Sleep(1000);
+        cout << "Napredak putovanja: " << i << "/" << totalTravelTime << " minuta." << endl;
+    }
+
+    tree.remove(assignedVehicle->id);
+    tree.insert(*assignedVehicle);
+
+    cout << "Simulacija putovanja kompletirana. Vozilo se sada nalazi na adresi " << assignedVehicle->currAddr << "." << endl;
+}
+
+void dijkstra(const Graph &grad, int start, int *distances, int *previous)
+{
+    const int n = grad.getN();
+    bool visited[MAX] = {false};
+    for (int i = 0; i < n; i++)
+    {
+        distances[i] = INT_MAX;
+        previous[i] = -1;
+    }
+    distances[start] = 0;
+
+    for (int i = 0; i < n - 1; ++i)
+    {
+        int minDist = INT_MAX, minIndex = -1;
+        for (int j = 0; j < n; j++)
+        {
+            if (!visited[j] && distances[j] < minDist)
+            {
+                minDist = distances[j];
+                minIndex = j;
+            }
+        }
+
+        if (minIndex == -1)
+            break;
+
+        visited[minIndex] = true;
+
+        for (int j = 0; j < n; j++)
+        {
+            int tezina = grad[minIndex][j];
+            if (!visited[j] && tezina > 0 && distances[minIndex] != INT_MAX &&
+                distances[minIndex] + tezina < distances[j])
+            {
+                distances[j] = distances[minIndex] + tezina;
+                previous[j] = minIndex;
+            }
+        }
+    }
+}
+
+void path(int start, int target, const int *previous)
+{
+    if (start == target)
+    {
+        cout << target;
+        return;
+    }
+
+    if (previous[target] == -1)
+    {
+        cout << "Ne postoji putanja izmedju zadatih cvorova.";
+        return;
+    }
+
+    path(start, previous[target], previous);
+    std::cout << " -> " << target;
+}
+
+Node::Node(Taxi v) : vehicle(v), left(nullptr), right(nullptr) {};
