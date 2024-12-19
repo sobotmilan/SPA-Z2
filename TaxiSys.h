@@ -1,43 +1,11 @@
 #pragma once
+#include "Taxi.h"
+#include "Structs.h"
+#include "Graph.h"
 #include <iostream>
-#include <cstdlib>
+#include <strings.h>
 #include <cstdio>
-#ifndef CLASSES_H
-#define CLASSES_H
-using namespace std;
-#define MAX 1000
-
-class Graph
-{
-    int n;
-    char *nodes;
-    int **ms;
-
-public:
-    Graph(int nodeNum = MAX);
-    ~Graph();
-
-    bool connected(int, int) const;
-    void ukloniAdresu(int, int);
-    int *operator[](int);
-    const int *operator[](int) const;
-    int getN() const;
-    void dodajAdresu(int, int, int);
-    int stepenCvora(int) const;
-    void ucitajCSV(const char *);
-};
-
-std::ostream &operator<<(std::ostream &os, const Graph &);
-
-struct Taxi
-{
-    char *id;
-    int arrivalTime;
-    int currAddr;
-    bool free;
-};
-
-std::ostream &operator<<(std::ostream &os, const Taxi &);
+#include <cstdlib>
 
 struct Node
 {
@@ -55,7 +23,7 @@ class TaxiBST
     Node *deleteNode(Node *root, const char *taxiId);
 
 public:
-    TaxiBST() : root(nullptr) {};
+    TaxiBST();
     void insert(Taxi &);
     Taxi *findMin();
     void remove(const char *);
@@ -85,8 +53,3 @@ public:
     void wait(int);
     void putovanje(Taxi *, int);
 };
-
-void dijkstra(const Graph &, int, int *, int *);
-void path(int, int, const int *);
-
-#endif

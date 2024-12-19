@@ -1,40 +1,10 @@
-#include "classes.h"
-#include "classes.cpp"
+#include "Structs.h"
+#include "Taxi.h"
+#include "Graph.h"
+#include "TaxiSys.h"
 #include <cstdlib>
 #include <iostream>
 #include <ctime>
-
-int readNumberOfVehicles(const char *filename)
-{
-    FILE *opener = fopen(filename, "r");
-    if (opener == nullptr)
-    {
-        cout << "Nemoguce otvaranje ulazne datoteke." << endl;
-        return -1;
-    }
-    char buffer[256];
-    int count = 0;
-    while (fgets(buffer, sizeof(buffer), opener) != nullptr)
-        count++;
-    fclose(opener);
-    return count;
-}
-
-int readNumberOfNodes(const char *filename)
-{
-    FILE *opener = fopen(filename, "r");
-    if (opener == nullptr)
-    {
-        cout << "Nemoguce otvaranje ulazne datoteke." << endl;
-        return -1;
-    }
-    char buffer[1024];
-    int count = 0;
-    while (fgets(buffer, sizeof(buffer), opener) != nullptr)
-        count++;
-    fclose(opener);
-    return count;
-}
 
 int main(int argc, char *argv[])
 {
@@ -46,14 +16,14 @@ int main(int argc, char *argv[])
     int t = readNumberOfVehicles(filenameTaxi);
     if (t == -1)
     {
-        std::cerr << "Error reading the number of vehicles from file.\n";
+        std::cerr << "Greska u citanju broja vozila.\n";
         return EXIT_FAILURE;
     }
 
     int numNodes = readNumberOfNodes(filenameGraf);
     if (numNodes == -1)
     {
-        std::cerr << "Error reading the number of nodes from graph file.\n";
+        std::cerr << "Greska u citanju broja cvorova.\n";
         return EXIT_FAILURE;
     }
 
@@ -65,6 +35,6 @@ int main(int argc, char *argv[])
 
     sistem.executeQuery(filenameUpiti);
 
-    std::cout << "Simulation completed successfully.\n";
-    return EXIT_SUCCESS;
+    std::cout << "Simulacija kompletirana.\n";
+    return 0;
 }
