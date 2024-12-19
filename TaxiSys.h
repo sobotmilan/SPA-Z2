@@ -18,7 +18,7 @@ struct Node
 class TaxiBST
 {
     Node *root;
-    Node *insert(Node *root, Taxi vehicle);
+    Node *insertNode(Node *root, Taxi vehicle);
     Node *findMin(Node *root);
     Node *deleteNode(Node *root, const char *taxiId);
 
@@ -28,6 +28,8 @@ public:
     Taxi *findMin();
     void remove(const char *);
     bool isEmpty();
+    void preorder(Node *);
+    Node *getRoot();
 };
 
 struct Journey
@@ -53,3 +55,5 @@ public:
     void wait(int);
     void putovanje(Taxi *, int);
 };
+
+bool isSymbol(char);

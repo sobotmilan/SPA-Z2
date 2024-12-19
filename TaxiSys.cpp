@@ -10,36 +10,39 @@ TaxiSys::TaxiSys(const Graph &city, int num, const char *filename, TaxiBST &tree
         delete[] vehicles;
         return;
     }
-    for (int i = 0; i < num; i++)
+    char buffer[256];
+    int i = 0;
+    while ((fgets(buffer, sizeof(buffer), vehicleList) != nullptr) && i < num)
     {
-        char buffer[256];
-
-        while (fgets(buffer, sizeof(buffer), vehicleList) != nullptr)
+        int j = 0;
+        char tempID[10];
+        while (isSymbol(buffer[j]))
         {
-            int j = 0;
-            char tempID[8];
-            while (buffer[j] != ',' && buffer[j] != '\0')
-            {
-                tempID[j] = buffer[j];
-                j++;
-            }
-            vehicles[i].id = new char[strlen(tempID) + 1];
-            strcpy(vehicles[i].id, tempID);
-            char tempAddr[5];
-            int k = 0;
-            if (buffer[j] = ',')
-                j++;
-            while (buffer[j] != '\0')
-            {
-                tempAddr[k] = buffer[j];
-                j++;
-                k++;
-            }
-            vehicles[i].currAddr = atoi(tempAddr);
+            tempID[j] = buffer[j];
+            j++;
         }
+        vehicles[i].id = new char[strlen(tempID) + 1];
+        strcpy(vehicles[i].id, tempID);
+        char tempAddr[5] = "";
+        int k = 0;
+        if (buffer[j] = ',')
+            j++;
+        while (isSymbol(buffer[j]))
+        {
+            tempAddr[k] = buffer[j];
+            j++;
+            k++;
+        }
+        std::cout << tempAddr << std::endl;
+        vehicles[i].currAddr = atoi(tempAddr);
+        vehicles[i].arrivalTime = 0;
+        vehicles[i].free = true;
+        std::cout << "kreirano vozilo sa identifikatorom " << vehicles[i].id << " curraddr = " << vehicles[i].currAddr << std::endl;
 
-        tree.insert(vehicles[i]);
+        this->tree.insert(vehicles[i]);
+        i++;
     }
+    this->tree.preorder(this->tree.getRoot());
 }
 TaxiSys::~TaxiSys()
 {
@@ -65,22 +68,24 @@ void TaxiSys::executeQuery(const char *filename)
         int destination;
         char tempAddr[5];
         int i = 0;
-        while (buffer[i] != '\0' && buffer[i] != ',')
+        while (isSymbol(buffer[i]))
         {
             tempAddr[i] = buffer[i];
             i++;
         }
         location = atoi(tempAddr);
         int j = 0;
-        strcpy(tempAddr, "");
-        while (buffer[i] != '\0')
+        strcpy(tempAddr, "\0");
+        if (buffer[i] == ',')
+            i++;
+        while (isSymbol(buffer[i]))
         {
             tempAddr[j] = buffer[i];
             j++;
             i++;
         }
         destination = atoi(tempAddr);
-        strcpy(tempAddr, "");
+        strcpy(tempAddr, "\0");
 
         this->executeRide(location, destination);
     }
@@ -182,7 +187,7 @@ void TaxiSys::putovanje(Taxi *assignedVehicle, int totalTravelTime)
 
     for (int i = 1; i <= totalTravelTime; ++i)
     {
-        Sleep(1000);
+        Sleep(200);
         std::cout << "Napredak putovanja: " << i << "/" << totalTravelTime << " minuta." << std::endl;
     }
 
@@ -194,14 +199,14 @@ void TaxiSys::putovanje(Taxi *assignedVehicle, int totalTravelTime)
 
 TaxiBST::TaxiBST() : root(nullptr) {};
 
-Node *TaxiBST::insert(Node *root, Taxi vehicle)
+Node *TaxiBST::insertNode(Node *root, Taxi vehicle)
 {
     if (root == nullptr)
         return new Node(vehicle);
     if (vehicle.arrivalTime < root->vehicle.arrivalTime)
-        root->left = insert(root->left, vehicle);
+        root->left = insertNode(root->left, vehicle);
     else
-        root->right = insert(root->right, vehicle);
+        root->right = insertNode(root->right, vehicle);
     return root;
 }
 Node *TaxiBST::findMin(Node *root)
@@ -240,7 +245,7 @@ Node *TaxiBST::deleteNode(Node *root, const char *taxiId)
 }
 void TaxiBST::insert(Taxi &vehicle)
 {
-    root = insert(root, vehicle);
+    this->root = insertNode(this->root, vehicle);
 }
 Taxi *TaxiBST::findMin()
 {
@@ -257,4 +262,23 @@ void TaxiBST::remove(const char *targetID)
 bool TaxiBST::isEmpty()
 {
     return root == nullptr;
+}
+
+bool isSymbol(char c)
+{
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9');
+}
+
+void TaxiBST::preorder(Node *root)
+{
+    if (root != nullptr)
+    {
+        std::cout << "id = " << root->vehicle.id << ", addr = " << root->vehicle.currAddr << std::endl;
+        preorder(root->left);
+        preorder(root->right);
+    }
+}
+Node *TaxiBST::getRoot()
+{
+    return this->root;
 }

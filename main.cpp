@@ -16,15 +16,15 @@ int main(int argc, char *argv[])
     int t = readNumberOfVehicles(filenameTaxi);
     if (t == -1)
     {
-        std::cerr << "Greska u citanju broja vozila.\n";
-        return EXIT_FAILURE;
+        std::cout << "Greska u citanju broja vozila." << std::endl;
+        return -1;
     }
 
     int numNodes = readNumberOfNodes(filenameGraf);
     if (numNodes == -1)
     {
-        std::cerr << "Greska u citanju broja cvorova.\n";
-        return EXIT_FAILURE;
+        std::cout << "Greska u citanju broja cvorova." << std::endl;
+        return -1;
     }
 
     Graph grad(numNodes);

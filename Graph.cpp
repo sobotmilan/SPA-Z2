@@ -1,6 +1,7 @@
 #include "Graph.h"
 #include <iostream>
 #include <cstdio>
+#include <string>
 #include <cstdlib>
 
 static int ERRORADDR = INT_MIN;
@@ -81,24 +82,54 @@ std::ostream &operator<<(std::ostream &os, const Graph &other)
 }
 void Graph::ucitajCSV(const char *filename)
 {
-    FILE *file = fopen(filename, "r");
+    FILE *opener = fopen(filename, "r");
 
-    if (file == nullptr)
+    if (opener == nullptr)
     {
-        std::cout << "Neuspjesno otvaranje ulazne datoteke.";
+        std::cout << "Neuspjesno otvaranje ulazne datoteke." << std::endl;
         return;
     }
 
-    for (int i = 0; i < this->n; i++)
+    int rowIndex = 0;
+    char line[1024];
+
+    while (fgets(line, sizeof(line), opener) && rowIndex < this->n)
     {
-        for (int j = 0; j < this->n; j++)
-            if (fscanf(file, "%d", &ms[i][j]) != 1)
-            {
-                std::cout << "Greska pri citanju vrijednosti iz datoteke!";
-                fclose(file);
-                return;
-            }
+        std::string row(line);
+        int pos = 0;
+        int colIndex = 0;
+
+        while ((pos = (int)(row.find(','))) != -1 && colIndex < this->n)
+        {
+            std::string value = row.substr(0, pos);
+            ms[rowIndex][colIndex] = std::stoi(value);
+            row.erase(0, pos + 1);
+            colIndex++;
+        }
+
+        if (colIndex < this->n && !row.empty())
+        {
+            ms[rowIndex][colIndex] = std::stoi(row);
+            colIndex++;
+        }
+
+        if (colIndex != this->n)
+        {
+            std::cout << "Greska pri citanju vrijednosti iz datoteke!" << std::endl;
+            fclose(opener);
+            return;
+        }
+
+        rowIndex++;
     }
-    fclose(file);
+
+    if (rowIndex != this->n)
+    {
+        std::cout << "Greska pri citanju vrijednosti iz datoteke!" << std::endl;
+        fclose(opener);
+        return;
+    }
+
+    fclose(opener);
     std::cout << "Citanje uspjesno." << std::endl;
 }
