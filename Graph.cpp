@@ -6,7 +6,7 @@
 
 static int ERRORADDR = INT_MIN;
 
-Graph::Graph(int nodeNum) : n(nodeNum), nodes(new char[n])
+Graph::Graph(int nodeNum) : n(nodeNum), nodes(new int[n])
 {
     ms = new int *[n];
     for (int i = 0; i < n; i++)
@@ -16,14 +16,16 @@ Graph::Graph(int nodeNum) : n(nodeNum), nodes(new char[n])
         {
             ms[i][j] = 0;
         }
+        nodes[i] = i;
     }
 }
 Graph::~Graph()
 {
-    delete[] this->nodes;
+
     for (int i = 0; i < this->n; i++)
         delete[] this->ms[i];
     delete[] this->ms;
+    delete[] this->nodes;
 }
 int Graph::getN() const
 {
@@ -132,4 +134,25 @@ void Graph::ucitajCSV(const char *filename)
 
     fclose(opener);
     std::cout << "Citanje uspjesno." << std::endl;
+}
+
+void Graph::DFS()
+{
+    bool visited[n];
+    for (int i = 0; i < this->n; i++)
+        visited[i] = false;
+    DFS_visit(visited, 0);
+}
+void Graph::DFS_visit(bool visited[], int v)
+{
+    visited[v] = true;
+
+    int u = 0;
+    while (u < this->n)
+    {
+        if (this->ms[u][v] > 0)
+            if (visited[u] == false)
+                DFS_visit(visited, u);
+        u++;
+    }
 }

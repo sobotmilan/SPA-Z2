@@ -35,6 +35,12 @@ int main(int argc, char *argv[])
 
     sistem.executeQuery(filenameUpiti);
 
-    std::cout << "Simulacija kompletirana.\n";
+    std::cout << "Simulacija kompletirana." << std::endl;
+
+    std::cout << "STATS:" << std::endl;
+    std::cout << "totalNumberOfRides = " << totalNumberOfRides << std::endl;
+    std::cout << "totaltotalUserTravelTime = " << totalUserTravelTime << std::endl;
+    std::cout << "totalUserWaitTime = " << totalUserWaitTime << std::endl;
+    std::cout << "totaltotalVehicleMovementTime = " << totalVehicleMovementTime << std::endl;
     return 0;
 }

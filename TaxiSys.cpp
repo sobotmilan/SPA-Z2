@@ -1,7 +1,8 @@
-#include "Taxisys.h"
+#include "TaxiSys.h"
 #define _HAS_STD_BYTE 0
 #include <windows.h>
-TaxiSys::TaxiSys(const Graph &city, int num, const char *filename, TaxiBST &tree) : city(city), t(num), vehicles(new Taxi[num]), tree(tree)
+
+TaxiSys::TaxiSys(Graph &city, int num, const char *filename, TaxiBST &giventree) : city(city), t(num), vehicles(new Taxi[num]()), tree(giventree)
 {
     FILE *vehicleList = fopen(filename, "r");
     if (vehicleList == nullptr)
@@ -14,6 +15,7 @@ TaxiSys::TaxiSys(const Graph &city, int num, const char *filename, TaxiBST &tree
     int i = 0;
     while ((fgets(buffer, sizeof(buffer), vehicleList) != nullptr) && i < num)
     {
+
         int j = 0;
         char tempID[10];
         while (isSymbol(buffer[j]))
@@ -36,6 +38,7 @@ TaxiSys::TaxiSys(const Graph &city, int num, const char *filename, TaxiBST &tree
         std::cout << tempAddr << std::endl;
         vehicles[i].currAddr = atoi(tempAddr);
         vehicles[i].arrivalTime = 0;
+        vehicles[i].distanceToUser = -1;
         vehicles[i].free = true;
         std::cout << "kreirano vozilo sa identifikatorom " << vehicles[i].id << " curraddr = " << vehicles[i].currAddr << std::endl;
 
@@ -46,7 +49,6 @@ TaxiSys::TaxiSys(const Graph &city, int num, const char *filename, TaxiBST &tree
 }
 TaxiSys::~TaxiSys()
 {
-    delete[] this->arr;
     this->t = 0;
     delete[] this->vehicles;
 }
@@ -64,9 +66,10 @@ void TaxiSys::executeQuery(const char *filename)
     char buffer[256];
     while (fgets(buffer, sizeof(buffer), queries) != nullptr)
     {
+        totalNumberOfRides++;
         int location;
         int destination;
-        char tempAddr[5];
+        char tempAddr[5] = "";
         int i = 0;
         while (isSymbol(buffer[i]))
         {
@@ -75,17 +78,19 @@ void TaxiSys::executeQuery(const char *filename)
         }
         location = atoi(tempAddr);
         int j = 0;
-        strcpy(tempAddr, "\0");
+        char tempDest[5] = "";
         if (buffer[i] == ',')
             i++;
         while (isSymbol(buffer[i]))
         {
-            tempAddr[j] = buffer[i];
+            tempDest[j] = buffer[i];
             j++;
             i++;
         }
-        destination = atoi(tempAddr);
-        strcpy(tempAddr, "\0");
+        destination = atoi(tempDest);
+
+        this->calculateTimeToUser(location);
+        this->rebuildBST();
 
         this->executeRide(location, destination);
     }
@@ -93,6 +98,7 @@ void TaxiSys::executeQuery(const char *filename)
 
 void TaxiSys::executeRide(int start, int destination)
 {
+    this->calculateTimeToUser(start);
     Taxi *assignedVehicle = this->tree.findMin();
 
     while (assignedVehicle == nullptr)
@@ -107,6 +113,7 @@ void TaxiSys::executeRide(int start, int destination)
     dijkstra(city, assignedVehicle->currAddr, distances, previous);
 
     int pickupDistance = distances[start];
+
     if (pickupDistance == INT_MAX)
     {
         std::cout << "Korisnik je nedostizan od strane bilo kog vozila!" << std::endl;
@@ -116,10 +123,17 @@ void TaxiSys::executeRide(int start, int destination)
         return;
     }
 
+    totalVehicleMovementTime += pickupDistance;
+    totalUserWaitTime += pickupDistance;
+
     assignedVehicle->free = false;
 
     dijkstra(city, start, distances, previous);
     int travelDistance = distances[destination];
+
+    totalVehicleMovementTime += travelDistance;
+    totalUserTravelTime += travelDistance;
+
     if (travelDistance == INT_MAX)
     {
         std::cout << "Ne postoji putanja do destinacije za pozivaoca." << std::endl;
@@ -131,11 +145,9 @@ void TaxiSys::executeRide(int start, int destination)
 
     int totalTravelTime = pickupDistance + travelDistance;
 
-    assignedVehicle->currAddr = destination;
-
     std::cout << "Vozilo " << assignedVehicle->id << " je dodijeljeno pozivaocu." << std::endl;
-    std::cout << "Procijenjeno vrijeme dolaska vozila do korisnika: " << pickupDistance << " units." << std::endl;
-    std::cout << "Procijenjeno vrijeme putovanja do destinacije: " << travelDistance << std::endl;
+    std::cout << "Procijenjeno vrijeme dolaska vozila do korisnika: " << pickupDistance << " minuta." << std::endl;
+    std::cout << "Procijenjeno vrijeme putovanja do destinacije: " << travelDistance << " minuta." << std::endl;
 
     std::cout << "Put do lokacije preuzimanja pozivaoca: ";
     path(assignedVehicle->currAddr, start, previous);
@@ -147,6 +159,13 @@ void TaxiSys::executeRide(int start, int destination)
     putovanje(assignedVehicle, totalTravelTime);
 
     assignedVehicle->free = true;
+    assignedVehicle->currAddr = destination;
+
+    std::cout << "Vozilo se sada nalazi na adresi " << assignedVehicle->currAddr << "." << std::endl;
+
+    for (int i = 0; i < this->t; i++)
+        if (!strcmp(vehicles[i].id, assignedVehicle->id))
+            vehicles[i] = *assignedVehicle;
 
     delete[] distances;
     delete[] previous;
@@ -187,23 +206,21 @@ void TaxiSys::putovanje(Taxi *assignedVehicle, int totalTravelTime)
 
     for (int i = 1; i <= totalTravelTime; ++i)
     {
-        Sleep(200);
         std::cout << "Napredak putovanja: " << i << "/" << totalTravelTime << " minuta." << std::endl;
     }
-
-    tree.remove(assignedVehicle->id);
-    tree.insert(*assignedVehicle);
-
-    std::cout << "Simulacija putovanja kompletirana. Vozilo se sada nalazi na adresi " << assignedVehicle->currAddr << "." << std::endl;
+    std::cout << "Simulacija putovanja kompletirana.";
+    assignedVehicle->free = true;
 }
 
 TaxiBST::TaxiBST() : root(nullptr) {};
 
-Node *TaxiBST::insertNode(Node *root, Taxi vehicle)
+Node::Node(Taxi &v) : vehicle(v), left(nullptr), right(nullptr) {};
+
+Node *TaxiBST::insertNode(Node *root, Taxi &vehicle)
 {
     if (root == nullptr)
         return new Node(vehicle);
-    if (vehicle.arrivalTime < root->vehicle.arrivalTime)
+    if (vehicle.distanceToUser < root->vehicle.distanceToUser)
         root->left = insertNode(root->left, vehicle);
     else
         root->right = insertNode(root->right, vehicle);
@@ -281,4 +298,57 @@ void TaxiBST::preorder(Node *root)
 Node *TaxiBST::getRoot()
 {
     return this->root;
+}
+
+void TaxiBST::destroyTree(Node *node)
+{
+    if (node == nullptr)
+        return;
+    destroyTree(node->left);
+    destroyTree(node->right);
+    delete node;
+}
+void TaxiSys::rebuildBST()
+{
+    this->tree.destroyTree(this->tree.getRoot());
+    this->tree.setRoot(nullptr);
+
+    for (int i = 0; i < this->t; i++)
+    {
+        this->tree.insert(this->vehicles[i]);
+    }
+}
+
+void TaxiSys::calculateTimeToUser(int userLocation)
+{
+    int *distances = new int[this->city.getN()];
+    int *previous = new int[this->city.getN()];
+
+    dijkstra(this->city, userLocation, distances, previous);
+
+    for (int i = 0; i < this->t; i++)
+    {
+        bool flag = false;
+        for (int j = 0; j < this->city.getN(); j++)
+        {
+            if (vehicles[i].currAddr == j)
+            {
+                flag = true;
+                vehicles[i].distanceToUser = distances[j];
+            }
+            if (flag == true)
+                break;
+        }
+        if (flag == false)
+            return;
+    }
+    std::cout << "CONTROL PRINT:" << std::endl;
+    std::cout << "id,distance,curraddr" << std::endl;
+    for (int i = 0; i < this->t; i++)
+        std::cout << this->vehicles[i].id << "," << this->vehicles[i].distanceToUser << "," << this->vehicles[i].currAddr << std::endl;
+}
+
+void TaxiBST::setRoot(Node *node)
+{
+    this->root = node;
 }

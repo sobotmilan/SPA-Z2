@@ -4,7 +4,7 @@
 class Graph
 {
     int n;
-    char *nodes;
+    int *nodes;
     int **ms;
 
 public:
@@ -19,6 +19,8 @@ public:
     void dodajAdresu(int, int, int);
     int stepenCvora(int) const;
     void ucitajCSV(const char *);
+    void DFS();
+    void DFS_visit(bool[], int);
 };
 
 std::ostream &operator<<(std::ostream &os, const Graph &);

@@ -48,18 +48,15 @@ void path(int start, int target, const int *previous)
         std::cout << target;
         return;
     }
-
     if (previous[target] == -1)
     {
-        std::cout << "Ne postoji putanja izmedju zadatih cvorova.";
+        std::cout << "Ne postoji direktna putanja izmedju zadatih cvorova.";
         return;
     }
 
     path(start, previous[target], previous);
     std::cout << " -> " << target;
 }
-
-Node::Node(Taxi v) : vehicle(v), left(nullptr), right(nullptr) {};
 
 int readNumberOfVehicles(const char *filename)
 {
