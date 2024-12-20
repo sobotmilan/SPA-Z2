@@ -46,6 +46,7 @@ class TaxiSys
     Taxi *vehicles;
     Graph &city;
     TaxiBST tree;
+    int globalClock;
 
 public:
     TaxiSys(Graph &, int num, const char *filename, TaxiBST &giventree);

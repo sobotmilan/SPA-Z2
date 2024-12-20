@@ -6,6 +6,8 @@
 #include <iostream>
 #include <ctime>
 
+// TODO: pogledaj "taxisys.cpp", metoda "executeRide", za tu metodu mi treba paralelizam!
+
 int main(int argc, char *argv[])
 {
     srand(time(NULL));

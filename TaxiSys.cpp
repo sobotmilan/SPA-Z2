@@ -1,8 +1,8 @@
 #include "TaxiSys.h"
 #define _HAS_STD_BYTE 0
 #include <windows.h>
-
-TaxiSys::TaxiSys(Graph &city, int num, const char *filename, TaxiBST &giventree) : city(city), t(num), vehicles(new Taxi[num]()), tree(giventree)
+// go to line 99
+TaxiSys::TaxiSys(Graph &city, int num, const char *filename, TaxiBST &giventree) : city(city), t(num), vehicles(new Taxi[num]()), tree(giventree), globalClock(0)
 {
     FILE *vehicleList = fopen(filename, "r");
     if (vehicleList == nullptr)
@@ -96,7 +96,7 @@ void TaxiSys::executeQuery(const char *filename)
     }
 }
 
-void TaxiSys::executeRide(int start, int destination)
+void TaxiSys::executeRide(int start, int destination) // ova funkcija bi trebala da se paralelno izvrsava, jer ona vrsi obradu zahtjeva
 {
     this->calculateTimeToUser(start);
     Taxi *assignedVehicle = this->tree.findMin();
